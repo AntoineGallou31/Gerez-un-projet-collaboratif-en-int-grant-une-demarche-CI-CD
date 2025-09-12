@@ -20,19 +20,19 @@ jobs:
 
       - name: Install dependencies
         run: |
-          cd frontend
+          cd front
           npm ci
 
       - name: Run frontend tests with coverage
         run: |
-          cd frontend
+          cd front
           npm run test
 
       - name: Upload frontend coverage report
         uses: actions/upload-artifact@v4
         with:
-          name: frontend-coverage
-          path: frontend/coverage/
+          name: front-coverage
+          path: front/coverage/
 
   backend:
     runs-on: ubuntu-latest
@@ -57,7 +57,7 @@ jobs:
           mvn clean test
 
       - name: Sauvegarder le rapport JaCoCo
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: jacoco-report
           path: backend/target/site/jacoco/
