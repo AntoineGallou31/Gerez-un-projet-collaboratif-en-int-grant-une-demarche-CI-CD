@@ -20,7 +20,7 @@ jobs:
 
       - name: Installer dépendances et build Angular
         run: |
-          cd frontend
+          cd front
           npm install
           npm run build
 
@@ -38,6 +38,10 @@ jobs:
 
       - name: Compiler et tester Spring Boot
         run: |
-          cd backend
+          cd back
           mvn clean install
+          mvn spring-boot:run
+          
+
+
 
