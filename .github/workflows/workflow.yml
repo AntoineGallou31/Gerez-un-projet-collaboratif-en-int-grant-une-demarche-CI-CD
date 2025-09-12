@@ -1,4 +1,4 @@
-name: CI Docker + SonarCloud
+name: CI
 
 on:
   push:
@@ -7,49 +7,26 @@ on:
     branches: [ main ]
 
 jobs:
-  backend:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout backend code
-        uses: actions/checkout@v4
-
-      - name: Build backend Docker image
-        run: |
-          docker build -t bobapp-backend:latest -f back/Dockerfile .
-
-      - name: Run backend container for test
-        run: |
-          docker run --rm -p 8080:8080 bobapp-backend:latest & sleep 20
-
-      - name: Save JaCoCo coverage
-        uses: actions/upload-artifact@v4
-        with:
-          name: backend-jacoco
-          path: back/target/site/jacoco/
-
-      - name: SonarCloud Scan (Backend)
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: |
-          cd back
-          mvn sonar:sonar \
-            -Dsonar.projectKey=AntoineGallou31_Gerez-un-projet-collaboratif-en-int-grant-une-demarche-CI-CD \
-            -Dsonar.organization=antoinegallou31 \
-            -Dsonar.host.url=https://sonarcloud.io \
-            -Dsonar.login=$SONAR_TOKEN \
-            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
-
   frontend:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout frontend code
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Build frontend Docker image
-        run: docker build -t bobapp-frontend:latest -f front/Dockerfile .
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
 
-      - name: Run frontend container for test
-        run: docker run --rm -p 80:80 bobapp-frontend:latest & sleep 10
+      - name: Install dependencies
+        run: |
+          cd front
+          npm ci
+
+      - name: Run frontend tests with coverage
+        run: |
+          cd front
+          npm run test
 
       - name: Upload frontend coverage report
         uses: actions/upload-artifact@v4
@@ -68,4 +45,38 @@ jobs:
             -Dsonar.typescript.lcov.reportPaths=coverage/bobapp/lcov.info \
             -Dsonar.login=$SONAR_TOKEN
 
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v4
+
+      - name: Installer Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Compiler et tester Spring Boot
+        run: |
+          cd back
+          mvn clean verify
+
+      - name: Sauvegarder le rapport JaCoCo
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-report
+          path: back/target/site/jacoco/
+
+      - name: SonarCloud Scan (Backend)
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          cd back
+          mvn -B sonar:sonar \
+            -Dsonar.projectKey=AntoineGallou31_Gerez-un-projet-collaboratif-en-int-grant-une-demarche-CI-CD \
+            -Dsonar.organization=antoinegallou31 \
+            -Dsonar.host.url=https://sonarcloud.io \
+            -Dsonar.login=$SONAR_TOKEN \
+            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
 
