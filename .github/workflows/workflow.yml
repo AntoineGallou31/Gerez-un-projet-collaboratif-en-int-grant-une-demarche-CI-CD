@@ -43,7 +43,7 @@ jobs:
             -Dproject.settings=../sonar-project.properties \
             -Dsonar.host.url=https://sonarcloud.io \
             -Dsonar.typescript.lcov.reportPaths=coverage/bobapp/lcov.info \
-            -Dsonar.login=$SONAR_TOKEN
+            -Dsonar.token=$SONAR_TOKEN
 
   backend:
     runs-on: ubuntu-latest
@@ -74,9 +74,10 @@ jobs:
         run: |
           cd back
           mvn -B sonar:sonar \
-            -Dproject.settings=../sonar-project.properties \
+            -Dsonar.projectKey=AntoineGallou31_Gerez-un-projet-collaboratif-en-int-grant-une-demarche-CI-CD \
+            -Dsonar.organization=antoinegallou31 \
             -Dsonar.host.url=https://sonarcloud.io \
-            -Dsonar.login=$SONAR_TOKEN \
+            -Dsonar.token=$SONAR_TOKEN \
             -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
 
   docker:
