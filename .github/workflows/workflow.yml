@@ -74,7 +74,10 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
+          cd back
           mvn -B sonar:sonar \
+            -Dsonar.sources=back/main/java
+            -Dsonar.tests=back/test/java
             -Dsonar.projectKey=1551g1r3g13r1g351r13rd5g13e1r3513r \
             -Dsonar.organization=antoinegallou31 \
             -Dsonar.host.url=https://sonarcloud.io \
