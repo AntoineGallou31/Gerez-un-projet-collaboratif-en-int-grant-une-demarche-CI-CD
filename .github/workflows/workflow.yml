@@ -1,4 +1,4 @@
-name: CI
+name: CI/CD Pipeline
 
 on:
   push:
@@ -40,7 +40,7 @@ jobs:
         run: |
           cd front
           npx sonar-scanner \
-            -Dsonar.sources=src \
+            -Dproject.settings=../sonar-project.properties \
             -Dsonar.host.url=https://sonarcloud.io \
             -Dsonar.typescript.lcov.reportPaths=coverage/bobapp/lcov.info \
             -Dsonar.login=$SONAR_TOKEN
@@ -74,9 +74,39 @@ jobs:
         run: |
           cd back
           mvn -B sonar:sonar \
-            -Dsonar.projectKey=AntoineGallou31_Gerez-un-projet-collaboratif-en-int-grant-une-demarche-CI-CD \
-            -Dsonar.organization=antoinegallou31 \
+            -Dproject.settings=../sonar-project.properties \
             -Dsonar.host.url=https://sonarcloud.io \
             -Dsonar.login=$SONAR_TOKEN \
             -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
 
+  docker:
+    needs: [frontend, backend]
+    runs-on: ubuntu-latest
+    steps:
+      # 1. Récupérer le code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. Se connecter à Docker Hub
+      - name: Login to Docker Hub
+        run: echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
+
+      # 3. Construire l'image backend
+      - name: Build backend image
+        run: docker build -t bobapp-backend ./back
+
+      # 4. Construire l'image frontend
+      - name: Build frontend image
+        run: docker build -t bobapp-frontend ./front
+
+      # 5. Pousser l'image backend sur Docker Hub
+      - name: Push backend image
+        run: |
+          docker tag bobapp-backend ${{ secrets.DOCKER_USERNAME }}/bobapp-backend:latest
+          docker push ${{ secrets.DOCKER_USERNAME }}/bobapp-backend:latest
+
+      # 6. Pousser l'image frontend sur Docker Hub
+      - name: Push frontend image
+        run: |
+          docker tag bobapp-frontend ${{ secrets.DOCKER_USERNAME }}/bobapp-frontend:latest
+          docker push ${{ secrets.DOCKER_USERNAME }}/bobapp-frontend:latest
