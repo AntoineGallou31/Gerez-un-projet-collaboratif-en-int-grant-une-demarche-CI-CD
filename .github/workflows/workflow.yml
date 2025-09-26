@@ -26,7 +26,7 @@ jobs:
       - name: Run frontend tests with coverage
         run: |
           cd front
-          npm run test -- --watch=false --browsers=ChromeHeadless --code-coverage
+          npm run test -- --code-coverage
 
       - name: Upload frontend coverage report
         uses: actions/upload-artifact@v4
@@ -100,7 +100,7 @@ jobs:
             -Dsonar.host.url=https://sonarcloud.io
             -Dsonar.sources=back/src/main/java,front/src
             -Dsonar.java.binaries=back/target/classes
-            -Dsonar.javascript.lcov.reportPaths=front/coverage/lcov.info
+            -Dsonar.typescript.lcov.reportPaths=front/coverage/bobapp/lcov.info
             -Dsonar.exclusions=**/test/**,**/*.spec.ts,**/*.scss,**/*.html
 
   docker:
