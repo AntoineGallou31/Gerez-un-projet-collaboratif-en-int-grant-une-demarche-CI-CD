@@ -32,7 +32,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: front-coverage
-          path: front/coverage/lcov.info
+          path: front/coverage/
 
   backend:
     runs-on: ubuntu-latest
