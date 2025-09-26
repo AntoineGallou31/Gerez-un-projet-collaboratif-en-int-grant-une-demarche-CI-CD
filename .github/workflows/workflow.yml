@@ -26,7 +26,7 @@ jobs:
       - name: Run frontend tests with coverage
         run: |
           cd front
-          npm run test
+          npm run test -- --watch=false --browsers=ChromeHeadless --code-coverage
 
       - name: Upload frontend coverage report
         uses: actions/upload-artifact@v4
@@ -34,58 +34,82 @@ jobs:
           name: front-coverage
           path: front/coverage/
 
-      - name: SonarCloud Scan (Frontend)
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-        run: |
-          cd front
-          npx sonar-scanner \
-            -Dproject.settings=../sonar-project.properties \
-            -Dsonar.host.url=$SONAR_HOST_URL \
-            -Dsonar.typescript.lcov.reportPaths=coverage/bobapp/lcov.info \
-
   backend:
     runs-on: ubuntu-latest
     steps:
-      - name: Récupérer le code
+      - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Installer Java
+      - name: Set up Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
 
-      - name: Compiler et tester Spring Boot
+      - name: Compile and test backend
         run: |
           cd back
           mvn clean verify
 
-      - name: Sauvegarder le rapport JaCoCo
+      - name: Upload JaCoCo report
         uses: actions/upload-artifact@v4
         with:
           name: jacoco-report
           path: back/target/site/jacoco/
 
-      - name: SonarCloud Scan (Backend)
+  sonarcloud:
+    runs-on: ubuntu-latest
+    needs: [frontend, backend]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download frontend coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: front-coverage
+          path: ./front/coverage
+
+      - name: Download backend coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: jacoco-report
+          path: ./back/target/site/jacoco
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: SonarCloud Scan
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
           SONAR_PROJECT_KEY: ${{ secrets.SONAR_PROJECT_KEY }}
           SONAR_ORGANIZATION: ${{ secrets.SONAR_ORGANIZATION }}
         run: |
-          cd back
           mvn -B sonar:sonar \
             -Dsonar.projectKey=$SONAR_PROJECT_KEY \
             -Dsonar.organization=$SONAR_ORGANIZATION \
             -Dsonar.host.url=$SONAR_HOST_URL \
-            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+            -Dsonar.sources=back/src/main,front/src \
+            -Dsonar.tests=back/src/test,front/src \
+            -Dsonar.java.coveragePlugin=jacoco \
+            -Dsonar.coverage.jacoco.xmlReportPaths=back/target/site/jacoco/jacoco.xml \
+            -Dsonar.javascript.lcov.reportPaths=front/coverage/lcov.info
 
   docker:
-    needs: [frontend, backend]
+    needs: [frontend, backend, sonarcloud]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
