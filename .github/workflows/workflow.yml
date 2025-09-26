@@ -82,8 +82,11 @@ jobs:
           cd back
           mvn -B sonar:sonar \
             -Dsonar.projectKey=$SONAR_PROJECT_KEY \
-            -Dsonar.organization=$SONAR_ORGANIZATION\
+            -Dsonar.projectName=Backend \
+            -Dsonar.sources=src \
+            -Dsonar.organization=$SONAR_ORGANIZATION \
             -Dsonar.host.url=$SONAR_HOST_URL \
+            -Dsonar.login=$SONAR_TOKEN
             -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
 
   docker:
