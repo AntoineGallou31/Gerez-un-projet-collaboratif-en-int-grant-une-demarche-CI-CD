@@ -7,6 +7,44 @@ on:
     branches: [ main ]
 
 jobs:
+  backend:
+    runs-on: ubuntu-latest
+    permissions: read-all
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Installer Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Compiler et tester Spring Boot
+        run: |
+          cd back
+          mvn clean verify
+      - name: Sauvegarder le rapport JaCoCo
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-report
+          path: back/target/site/jacoco/
+
+      - name: SonarCloud Scan (Backend)
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_PROJECT_KEY: ${{ secrets.SONAR_PROJECT_KEY }}
+          SONAR_ORGANIZATION: ${{ secrets.SONAR_ORGANIZATION }}
+        run: |
+          cd back
+          mvn -B sonar:sonar \
+            -Dsonar.projectKey=$SONAR_PROJECT_KEY \
+            -Dsonar.organization=$SONAR_ORGANIZATION \
+            -Dsonar.host.url=https://sonarcloud.io \
+            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+
   frontend:
     runs-on: ubuntu-latest
     steps:
@@ -22,96 +60,28 @@ jobs:
         run: |
           cd front
           npm ci
-
       - name: Run frontend tests with coverage
         run: |
           cd front
-          npm run test -- --code-coverage
-
+          npm run test
       - name: Upload frontend coverage report
         uses: actions/upload-artifact@v4
         with:
           name: front-coverage
-          path: front/coverage/bobapp/lcov.info
+          path: front/coverage/
 
-  backend:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Set up Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 17
-
-      - name: Compile and test backend
+      - name: SonarCloud Scan (Frontend)
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
-          cd back
-          mvn clean verify
-
-      - name: Upload JaCoCo report
-        uses: actions/upload-artifact@v4
-        with:
-          name: jacoco-report
-          path: back/target/site/jacoco/jacoco.xml
-
-  sonarcloud:
-    name: SonarCloud Analysis
-    needs: [frontend, backend]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 17
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-
-      - name: Install frontend dependencies
-        working-directory: front
-        run: npm ci
-
-      - name: Build backend
-        working-directory: back
-        run: mvn clean verify
-
-      - name: Build frontend
-        working-directory: front
-        run: npm run build
-
-      - name: Copy coverage reports for Sonar
-        run: |
-          mkdir -p .scanner-reports
-          cp back/target/site/jacoco/jacoco.xml .scanner-reports/jacoco.xml
-          cp front/coverage/bobapp/lcov.info .scanner-reports/lcov.info
-
-      - name: SonarCloud Scan
-        uses: SonarSource/sonarqube-scan-action@v5.0.0
-        with:
-          args: >
-            -Dsonar.login=${{ secrets.SONAR_TOKEN }}
-            -Dsonar.projectKey=1551g1r3g13r1g351r13rd5g13e1r3513r
-            -Dsonar.organization=antoinegallou31
-            -Dsonar.host.url=https://sonarcloud.io
-            -Dsonar.sources=back/src/main/java,front/src
-            -Dsonar.java.binaries=back/target/classes
-            -Dsonar.typescript.lcov.reportPaths=.scanner-reports/lcov.info
-            -Dsonar.coverage.jacoco.xmlReportPaths=.scanner-reports/jacoco.xml
-            -Dsonar.exclusions=**/test/**,**/*.spec.ts,**/*.scss,**/*.html
+          cd front
+          npx sonar-scanner \
+            -Dproject.settings=../sonar-project.properties \
+            -Dsonar.host.url=https://sonarcloud.io \
+            -Dsonar.typescript.lcov.reportPaths=coverage/bobapp/lcov.info \
 
   docker:
-    needs: [frontend, backend, sonarcloud]
+    needs: [frontend, backend]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -129,12 +99,16 @@ jobs:
       - name: Build frontend image
         run: docker build -t bobapp-frontend ./front
 
-      - name: Push backend image
-        run: |
-          docker tag bobapp-backend ${{ secrets.DOCKER_USERNAME }}/bobapp-backend:latest
-          docker push ${{ secrets.DOCKER_USERNAME }}/bobapp-backend:latest
+      - name: Build and Push backend image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./back
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/bobapp-backend:latest
 
-      - name: Push frontend image
-        run: |
-          docker tag bobapp-frontend ${{ secrets.DOCKER_USERNAME }}/bobapp-frontend:latest
-          docker push ${{ secrets.DOCKER_USERNAME }}/bobapp-frontend:latest
+      - name: Build and Push frontend image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./front
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/bobapp-frontend:latest
