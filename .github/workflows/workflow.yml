@@ -39,11 +39,12 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-
         run: |
           cd front
           npx sonar-scanner \
             -Dproject.settings=../sonar-project.properties \
+            -Dsonar.host.url=$SONAR_HOST_URL \
+            -Dsonar.sources=src \
             -Dsonar.typescript.lcov.reportPaths=coverage/bobapp/lcov.info \
 
   backend:
@@ -82,7 +83,11 @@ jobs:
         run: |
           cd back
           mvn -B sonar:sonar \
+            -Dsonar.projectKey=$SONAR_PROJECT_KEY \
+            -Dsonar.organization=$SONAR_ORGANIZATION\
+            -Dsonar.host.url=$SONAR_HOST_URL \
             -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+            -Dsonar.sources=src \
 
   docker:
     needs: [frontend, backend]
