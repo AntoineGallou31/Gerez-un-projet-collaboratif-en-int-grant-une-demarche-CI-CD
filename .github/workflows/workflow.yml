@@ -44,7 +44,6 @@ jobs:
           npx sonar-scanner \
             -Dproject.settings=../sonar-project.properties \
             -Dsonar.host.url=$SONAR_HOST_URL \
-            -Dsonar.sources=src \
             -Dsonar.typescript.lcov.reportPaths=coverage/bobapp/lcov.info \
 
   backend:
