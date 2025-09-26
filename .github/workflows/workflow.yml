@@ -36,7 +36,7 @@ jobs:
 
       - name: SonarCloud Scan (Frontend)
         env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN_FRONT }}
         run: |
           cd front
           npx sonar-scanner \
@@ -72,14 +72,13 @@ jobs:
 
       - name: SonarCloud Scan (Backend)
         env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN_BACK }}
         run: |
           cd back
           mvn -B sonar:sonar \
-            -Dsonar.projectKey=1551g1r3g13r1g351r13rd5g13e1r3513r \
+            -Dsonar.projectKey=antoinegallou31_bobapp-backend \
             -Dsonar.organization=antoinegallou31 \
             -Dsonar.host.url=https://sonarcloud.io \
-            -Dsonar.token=$SONAR_TOKEN \
             -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
 
   docker:
