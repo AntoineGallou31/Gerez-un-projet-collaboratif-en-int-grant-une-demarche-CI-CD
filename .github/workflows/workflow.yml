@@ -9,7 +9,6 @@ on:
 jobs:
   frontend:
     runs-on: ubuntu-latest
-    permissions: read-all
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -48,7 +47,6 @@ jobs:
 
   backend:
     runs-on: ubuntu-latest
-    permissions: read-all
     steps:
       - name: Récupérer le code
         uses: actions/checkout@v4
@@ -83,13 +81,8 @@ jobs:
           mvn -B sonar:sonar \
             -Dsonar.projectKey=$SONAR_PROJECT_KEY \
             -Dsonar.organization=$SONAR_ORGANIZATION \
-            -Dsonar.projectName=Backend \
-            -Dsonar.sources=src/main/java \
-            -Dsonar.tests=src/test/java \
-            -Dsonar.java.binaries=target/classes \
-            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
             -Dsonar.host.url=$SONAR_HOST_URL \
-            -Dsonar.token=$SONAR_TOKEN
+            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
 
   docker:
     needs: [frontend, backend]
