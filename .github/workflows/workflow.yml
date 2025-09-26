@@ -96,29 +96,15 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           run: |
-            # NE PAS FAIRE DE 'cd back' ICI - RESTEZ À LA RACINE DU REPO
             mvn -B sonar:sonar \
               -Dsonar.projectKey=1551g1r3g13r1g351r13rd5g13e1r3513r \
               -Dsonar.organization=antoinegallou31 \
-              -Dsonar.host.url=https://sonarcloud.io \
-            
-              # --- PARAMÈTRES CRITIQUES AJUSTÉS ---
-              # 1. Définir le répertoire de base à la racine ('.') pour inclure back et front
-              -Dsonar.projectBaseDir=. \
-            
-              # 2. Spécifier toutes les sources (back et front) par rapport à la racine
-              -Dsonar.sources=back/src/main/java,front/src \
-            
-              # 3. Spécifier tous les tests (back et front)
-              -Dsonar.tests=back/src/test/java,front/src \
-            
-              # 4. Spécifier les binaires Java (back)
-              -Dsonar.java.binaries=back/target/classes \
-            
-              # 5. Chemin JaCoCo (back)
-              -Dsonar.coverage.jacoco.xmlReportPaths=back/target/site/jacoco/jacoco.xml \
-            
-              # 6. Chemin LCOV (front)
+              -Dsonar.host.url=https://sonarcloud.io \           
+              -Dsonar.projectBaseDir=. \           
+              -Dsonar.sources=back/src/main/java,front/src \            
+              -Dsonar.tests=back/src/test/java,front/src \           
+              -Dsonar.java.binaries=back/target/classes \           
+              -Dsonar.coverage.jacoco.xmlReportPaths=back/target/site/jacoco/jacoco.xml \        
               -Dsonar.typescript.lcov.reportPaths=front/coverage/bobapp/lcov.info
 
   docker:
