@@ -86,8 +86,8 @@ jobs:
             -Dsonar.projectKey=$SONAR_PROJECT_KEY \
             -Dsonar.organization=$SONAR_ORGANIZATION\
             -Dsonar.host.url=$SONAR_HOST_URL \
+            -Dsonar.sources=src
             -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
-            -Dsonar.sources=src \
 
   docker:
     needs: [frontend, backend]
