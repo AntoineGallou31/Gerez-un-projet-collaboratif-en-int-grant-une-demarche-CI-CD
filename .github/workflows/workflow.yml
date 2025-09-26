@@ -32,7 +32,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: front-coverage
-          path: front/coverage/
+          path: front/coverage/lcov.info
 
   backend:
     runs-on: ubuntu-latest
@@ -57,33 +57,15 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: jacoco-report
-          path: back/target/site/jacoco/
+          path: back/target/site/jacoco/jacoco.xml
 
   sonarcloud:
-    runs-on: ubuntu-latest
+    name: SonarCloud Analysis
     needs: [frontend, backend]
+    runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Download frontend coverage
-        uses: actions/download-artifact@v4
-        with:
-          name: front-coverage
-          path: ./front/coverage
-
-      - name: Download backend coverage
-        uses: actions/download-artifact@v4
-        with:
-          name: jacoco-report
-          path: ./back/target/site/jacoco
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -91,14 +73,35 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - name: SonarCloud Scan
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-          SONAR_PROJECT_KEY: ${{ secrets.SONAR_PROJECT_KEY }}
-          SONAR_ORGANIZATION: ${{ secrets.SONAR_ORGANIZATION }}
-        run: mvn -B sonar:sonar -Dsonar.projectKey=$SONAR_PROJECT_KEY -Dsonar.organization=$SONAR_ORGANIZATION -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.sources=src/main,../front/src -Dsonar.tests=src/test,../front/src -Dsonar.java.binaries=back/target/classes -Dsonar.java.coveragePlugin=jacoco -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml -Dsonar.javascript.lcov.reportPaths=../front/coverage/lcov.info
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install frontend dependencies
+        working-directory: front
+        run: npm ci
+
+      - name: Build backend
         working-directory: back
+        run: mvn clean verify
+
+      - name: Build frontend (optional)
+        working-directory: front
+        run: npm run build
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        with:
+          args: >
+            -Dsonar.login=${{ secrets.SONAR_TOKEN }}
+            -Dsonar.projectKey=ton-org_bobapp
+            -Dsonar.organization=ton-org
+            -Dsonar.host.url=https://sonarcloud.io
+            -Dsonar.sources=back/src/main/java,front/src
+            -Dsonar.java.binaries=back/target/classes
+            -Dsonar.javascript.lcov.reportPaths=front/coverage/lcov.info
+            -Dsonar.exclusions=**/test/**,**/*.spec.ts,**/*.scss,**/*.html
 
   docker:
     needs: [frontend, backend, sonarcloud]
