@@ -82,7 +82,7 @@ jobs:
           cd back
           mvn -B sonar:sonar \
             -Dsonar.projectKey=$SONAR_PROJECT_KEY \
-            -Dsonar.organization=$SONAR_ORGANIZATION
+            -Dsonar.organization=$SONAR_ORGANIZATION \
             -Dsonar.projectName=Backend \
             -Dsonar.sources=src/main/java \
             -Dsonar.tests=src/test/java \
