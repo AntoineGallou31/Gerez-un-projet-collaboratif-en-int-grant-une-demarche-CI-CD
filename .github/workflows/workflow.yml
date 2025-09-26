@@ -95,17 +95,17 @@ jobs:
       - name: SonarCloud Scan Global
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          run: |
-            mvn -B sonar:sonar \
-              -Dsonar.projectKey=1551g1r3g13r1g351r13rd5g13e1r3513r \
-              -Dsonar.organization=antoinegallou31 \
-              -Dsonar.host.url=https://sonarcloud.io \           
-              -Dsonar.projectBaseDir=. \           
-              -Dsonar.sources=back/src/main/java,front/src \            
-              -Dsonar.tests=back/src/test/java,front/src \           
-              -Dsonar.java.binaries=back/target/classes \           
-              -Dsonar.coverage.jacoco.xmlReportPaths=back/target/site/jacoco/jacoco.xml \        
-              -Dsonar.typescript.lcov.reportPaths=front/coverage/bobapp/lcov.info
+        run: |
+          mvn -B sonar:sonar \
+            -Dsonar.projectKey=1551g1r3g13r1g351r13rd5g13e1r3513r \
+            -Dsonar.organization=antoinegallou31 \
+            -Dsonar.host.url=https://sonarcloud.io \           
+            -Dsonar.projectBaseDir=. \           
+            -Dsonar.sources=back/src/main/java,front/src \            
+            -Dsonar.tests=back/src/test/java,front/src \           
+            -Dsonar.java.binaries=back/target/classes \           
+            -Dsonar.coverage.jacoco.xmlReportPaths=back/target/site/jacoco/jacoco.xml \        
+            -Dsonar.typescript.lcov.reportPaths=front/coverage/bobapp/lcov.info
 
   docker:
     needs: [frontend, backend, sonar_scan]
