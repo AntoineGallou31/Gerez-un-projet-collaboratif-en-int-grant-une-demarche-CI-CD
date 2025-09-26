@@ -34,9 +34,6 @@ jobs:
           name: front-coverage
           path: front/coverage/
 
-      - name: List coverage files (debug)
-        run: ls -R front/coverage/
-
   backend:
     runs-on: ubuntu-latest
     steps:
