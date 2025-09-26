@@ -79,14 +79,13 @@ jobs:
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
           SONAR_PROJECT_KEY: ${{ secrets.SONAR_PROJECT_KEY }}
           SONAR_ORGANIZATION: ${{ secrets.SONAR_ORGANIZATION }}
-          SONAR_SOURCES: ${{ secrets.SONAR_SOURCES }}
         run: |
           cd back
           mvn -B sonar:sonar \
             -Dsonar.projectKey=$SONAR_PROJECT_KEY \
             -Dsonar.organization=$SONAR_ORGANIZATION\
             -Dsonar.host.url=$SONAR_HOST_URL \
-            -Dsonar.sources=src
+            -Dsonar.sources=src \
             -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
 
   docker:
