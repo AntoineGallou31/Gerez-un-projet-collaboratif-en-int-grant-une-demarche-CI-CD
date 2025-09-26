@@ -33,17 +33,6 @@ jobs:
           name: jacoco-report
           path: back/target/site/jacoco/
 
-      - name: SonarCloud Scan (Backend)
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: |
-          cd back
-          mvn -B sonar:sonar \
-            -Dsonar.projectKey=1551g1r3g13r1g351r13rd5g13e1r3513r \
-            -Dsonar.organization=antoinegallou31 \
-            -Dsonar.host.url=https://sonarcloud.io \
-            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
-
   frontend:
     runs-on: ubuntu-latest
     steps:
@@ -71,20 +60,55 @@ jobs:
           name: front-coverage
           path: front/coverage/
 
-      - name: SonarCloud Scan (Frontend)
+  sonar_scan:
+    runs-on: ubuntu-latest
+    needs: [frontend, backend]
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Télécharger le rapport JaCoCo (Backend)
+        uses: actions/download-artifact@v4
+        with:
+          name: jacoco-report
+          path: back/target/site/jacoco/
+
+      - name: Télécharger le rapport de couverture Front (lcov)
+        uses: actions/download-artifact@v4
+        with:
+          name: front-coverage
+          path: front/coverage/
+
+      - name: Set up Node.js (pour sonar-scanner du front)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Installer Java (pour Maven/Sonar Scanner du back)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: SonarCloud Scan Global
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
-          cd front
-          npx sonar-scanner \
-            -Dproject.settings=../sonar-project.properties \
+          cd back
+          mvn -B sonar:sonar \
+            -Dsonar.projectKey=1551g1r3g13r1g351r13rd5g13e1r3513r \
+            -Dsonar.organization=antoinegallou31 \
             -Dsonar.host.url=https://sonarcloud.io \
-            -Dsonar.typescript.lcov.reportPaths=coverage/bobapp/lcov.info \
-
-  
+            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
+            -Dsonar.typescript.lcov.reportPaths=../front/coverage/bobapp/lcov.info \
+            -Dsonar.sources=src/main/java,../front/src \
+            -Dsonar.tests=src/test/java,../front/src \
+            -Dsonar.java.binaries=target/classes
 
   docker:
-    needs: [frontend, backend]
+    needs: [frontend, backend, sonar_scan]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
