@@ -1,4 +1,4 @@
-name: CI/CD Pipeline
+name: CI/CD Bobapp
 
 on:
   push:
@@ -81,14 +81,14 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build and Push backend image
+      - name: Construire et pousser l'image backend
         uses: docker/build-push-action@v4
         with:
           context: ./back
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/bobapp-backend:latest
 
-      - name: Build and Push frontend image
+      - name: Construire et pousser l'image frontend
         uses: docker/build-push-action@v4
         with:
           context: ./front
