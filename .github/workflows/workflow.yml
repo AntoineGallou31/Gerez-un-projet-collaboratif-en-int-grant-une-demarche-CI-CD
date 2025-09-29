@@ -13,28 +13,35 @@ jobs:
       - name: Récupérer le code
         uses: actions/checkout@v4
         with:
-          # Nécessaire pour une analyse Sonar précise
           fetch-depth: 0
 
-      # --- Configuration des deux environnements ---
-      - name: Installer Java (pour le backend)
+      - name: Installer Java
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Installer Node.js (pour le frontend)
+      - name: Installer Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '18'
           cache: 'npm'
           cache-dependency-path: front/package-lock.json
 
-      # --- Étape Backend ---
       - name: Compiler et tester le backend
         run: mvn -B clean verify -f back/pom.xml
 
-      # --- Étape Frontend ---
+      - name: Compiler et tester Spring Boot
+        run: |
+          cd back
+          mvn clean verify
+
+      - name: Sauvegarder le rapport JaCoCo
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-report
+          path: back/target/site/jacoco/
+
       - name: Installer les dépendances du frontend
         run: npm ci --prefix front
 
@@ -47,24 +54,11 @@ jobs:
           name: front-coverage
           path: front/coverage/
 
-      - name: Compiler et tester Spring Boot
-        run: |
-          cd back
-          mvn clean verify
-      - name: Sauvegarder le rapport JaCoCo
-        uses: actions/upload-artifact@v4
-        with:
-          name: jacoco-report
-          path: back/target/site/jacoco/
-
-      # --- Étape d'Analyse Unifiée ---
       - name: Lancer l'analyse SonarCloud
         uses: SonarSource/sonarqube-scan-action@master
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
-          # On configure le scanner pour qu'il trouve les deux rapports
           args: >
             -Dsonar.organization=${{ secrets.SONAR_ORGANIZATION }}
             -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }}
@@ -75,7 +69,6 @@ jobs:
             -Dsonar.typescript.lcov.reportPaths=front/coverage/bobapp/lcov.info
 
   docker:
-    # Ce job s'exécute après le succès du précédent
     needs: [build-and-analyze]
     runs-on: ubuntu-latest
     steps:
