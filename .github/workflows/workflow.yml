@@ -41,6 +41,22 @@ jobs:
       - name: Lancer les tests et la couverture du frontend
         run: npm run test --prefix front
 
+      - name: Sauvegarder le rapport de couverture du frontend
+        uses: actions/upload-artifact@v4
+        with:
+          name: front-coverage
+          path: front/coverage/
+
+      - name: Compiler et tester Spring Boot
+        run: |
+          cd back
+          mvn clean verify
+      - name: Sauvegarder le rapport JaCoCo
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-report
+          path: back/target/site/jacoco/
+
       # --- Étape d'Analyse Unifiée ---
       - name: Lancer l'analyse SonarCloud
         uses: SonarSource/sonarcloud-github-action@master
