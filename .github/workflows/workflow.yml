@@ -7,97 +7,69 @@ on:
     branches: [ main ]
 
 jobs:
-  backend:
+  build-and-analyze:
     runs-on: ubuntu-latest
-    permissions: read-all
     steps:
       - name: Récupérer le code
         uses: actions/checkout@v4
         with:
+          # Nécessaire pour une analyse Sonar précise
           fetch-depth: 0
 
-      - name: Installer Java
+      # --- Configuration des deux environnements ---
+      - name: Installer Java (pour le backend)
         uses: actions/setup-java@v4
         with:
-          distribution: temurin
-          java-version: 17
+          distribution: 'temurin'
+          java-version: '17'
 
-      - name: Compiler et tester Spring Boot
-        run: |
-          cd back
-          mvn clean verify
-      - name: Sauvegarder le rapport JaCoCo
-        uses: actions/upload-artifact@v4
-        with:
-          name: jacoco-report
-          path: back/target/site/jacoco/
-
-      - name: SonarCloud Scan (Backend)
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_PROJECT_KEY: ${{ secrets.SONAR_PROJECT_KEY }}
-          SONAR_ORGANIZATION: ${{ secrets.SONAR_ORGANIZATION }}
-        run: |
-          cd back
-          mvn -B sonar:sonar \
-            -Dsonar.projectKey=$SONAR_PROJECT_KEY \
-            -Dsonar.organization=$SONAR_ORGANIZATION \
-            -Dsonar.host.url=https://sonarcloud.io \
-            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
-
-  frontend:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
+      - name: Installer Node.js (pour le frontend)
         uses: actions/setup-node@v4
         with:
           node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: front/package-lock.json
 
-      - name: Install dependencies
-        run: |
-          cd front
-          npm ci
-      - name: Run frontend tests with coverage
-        run: |
-          cd front
-          npm run test
-      - name: Upload frontend coverage report
-        uses: actions/upload-artifact@v4
-        with:
-          name: front-coverage
-          path: front/coverage/
+      # --- Étape Backend ---
+      - name: Compiler et tester le backend
+        run: mvn -B clean verify -f back/pom.xml
 
-      - name: SonarCloud Scan (Frontend)
+      # --- Étape Frontend ---
+      - name: Installer les dépendances du frontend
+        run: npm ci --prefix front
+
+      - name: Lancer les tests et la couverture du frontend
+        run: npm run test --prefix front
+
+      # --- Étape d'Analyse Unifiée ---
+      - name: Lancer l'analyse SonarCloud
+        uses: SonarSource/sonarcloud-github-action@master
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: |
-          cd front
-          npx sonar-scanner \
-            -Dproject.settings=../sonar-project.properties \
-            -Dsonar.host.url=https://sonarcloud.io \
-            -Dsonar.typescript.lcov.reportPaths=coverage/bobapp/lcov.info \
+        with:
+          # On configure le scanner pour qu'il trouve les deux rapports
+          args: >
+            -Dsonar.organization=${{ secrets.SONAR_ORGANIZATION }}
+            -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }}
+            -Dsonar.sources=back/src/main,front/src
+            -Dsonar.tests=back/src/test,front/src
+            -Dsonar.coverage.jacoco.xmlReportPaths=back/target/site/jacoco/jacoco.xml
+            -Dsonar.typescript.lcov.reportPaths=front/coverage/bobapp/lcov.info
 
   docker:
-    needs: [frontend, backend]
+    # Ce job s'exécute après le succès du précédent
+    needs: [build-and-analyze]
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Récupérer le code
         uses: actions/checkout@v4
 
-      - name: Login to Docker Hub
+      - name: Se connecter à Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-
-      - name: Build backend image
-        run: docker build -t bobapp-backend ./back
-
-      - name: Build frontend image
-        run: docker build -t bobapp-frontend ./front
 
       - name: Build and Push backend image
         uses: docker/build-push-action@v4
